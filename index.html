@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Thosaporn</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap');
+
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed;
+    background-size: cover;
+    font-family: 'Comic Neue', cursive, sans-serif;
+    color: #ff1493;
+  }
+
+  h1 {
+    position: relative;
+    z-index: 15;
+    text-align: center;
+    margin-top: 20px;
+    font-size: 32px;
+    user-select: none;
+    text-shadow: 0 0 8px #ff69b4;
+  }
+
+  .background-hearts {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    top: 0; left: 0;
+    z-index: 0;
+  }
+
+  .bg-heart {
+    position: absolute;
+    font-size: 20px;
+    color: #ff69b4;
+    opacity: 0.6;
+    animation: floatSideways linear infinite;
+    user-select: none;
+    text-shadow: 0 0 3px #ff69b4;
+  }
+
+  @keyframes floatSideways {
+    0% {
+      transform: translateX(-10vw) translateY(0) scale(1);
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(110vw) translateY(-50vh) scale(1.5);
+      opacity: 0;
+    }
+  }
+
+  .envelope-container {
+    position: absolute;
+    top: 55%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 450px;
+    z-index: 10;
+  }
+
+  .envelope {
+    width: 450px;
+    height: 350px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 3px solid #ff69b4;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(255, 20, 147, 0.5);
+    cursor: pointer;
+    overflow: hidden;
+    position: relative;
+    user-select: none;
+  }
+
+  .flap {
+    width: 0;
+    height: 0;
+    border-left: 225px solid transparent;
+    border-right: 225px solid transparent;
+    border-bottom: 155px solid #ff69b4;
+    position: absolute;
+    top: -155px;
+    left: 0;
+    transition: transform 0.8s;
+    transform-origin: bottom;
+    box-shadow: 0 4px 6px rgba(255, 20, 147, 0.4);
+  }
+
+  .letter {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    height: calc(100% - 40px);
+    background: #fff0f5;
+    padding: 25px 30px;
+    box-sizing: border-box;
+    text-align: left;
+    font-size: 18px;
+    line-height: 1.6;
+    color: #c71585;
+    opacity: 0;
+    transition: top 1s ease, opacity 1s ease;
+    font-family: 'Comic Neue', cursive, sans-serif;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #ff69b4 #ffe6f0;
+  }
+
+  .letter::-webkit-scrollbar {
+    width: 6px;
+  }
+  .letter::-webkit-scrollbar-track {
+    background: #ffe6f0;
+    border-radius: 3px;
+  }
+  .letter::-webkit-scrollbar-thumb {
+    background-color: #ff69b4;
+    border-radius: 3px;
+  }
+
+  .envelope.open .flap {
+    transform: rotateX(180deg);
+  }
+
+  .envelope.open .letter {
+    top: 40px;
+    opacity: 1;
+  }
+
+  .heart-emoji {
+    font-size: 26px;
+    color: #ff1493;
+    margin-top: 12px;
+    animation: beat 1.2s infinite;
+  }
+
+  @keyframes beat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.25); }
+  }
+
+  .floating-messages-container {
+    pointer-events: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: visible;
+    z-index: 5;
+  }
+
+  .floating-message {
+    position: absolute;
+    font-size: 24px;
+    color: #ff1493;
+    text-shadow: 0 0 6px #ff69b4;
+    user-select: none;
+    opacity: 0;
+    animation-name: floatMessageAnim;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+    white-space: nowrap;
+  }
+
+  @keyframes floatMessageAnim {
+    0% {
+      transform: translate(0, 0) scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: translate(20px, -20px) scale(1.2);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(0, 0) scale(1);
+      opacity: 1;
+    }
+  }
+</style>
+</head>
+<body>
+
+<h1>Try opening it 💌</h1>
+
+<div class="background-hearts" id="backgroundHearts"></div>
+
+<div class="envelope-container">
+  <div class="envelope" id="envelope" title="Click to open/close">
+    <div class="flap"></div>
+    <div class="letter">
+      สุขสันต์วันเกิดน้าาา<br><br>
+      ขอบคุณที่ยังอยู่ด้วยกันเสมอ ถึงแม้จะทะเลาะกันบ่อย ไม่พอใจกันบ้างแต่ไม่เคยคิดจะทิ้งเลย
+      น่ะ วันเกิดนี้ก็ขอให้มีความสุข สุขภาพแข็งแรงและยังรักแบบนี้ไปเรื่อยๆน้าา💖🫂<br><br>
+      <img src="mm.jpg" width="105" height="140">
+      <div class="heart-emoji"></div>
+    </div>
+  </div>
+</div>
+
+<div class="floating-messages-container" id="floatingMessagesContainer"></div>
+
+<script>
+  const backgroundHearts = document.getElementById('backgroundHearts');
+  const numHearts = 50;
+
+  for (let i = 0; i < numHearts; i++) {
+    const heart = document.createElement('div');
+    heart.classList.add('bg-heart');
+    heart.innerText = '❤️';
+    heart.style.top = (Math.random() * 100) + 'vh';
+    heart.style.left = (Math.random() * 100) + 'vw';
+    heart.style.fontSize = (10 + Math.random() * 30) + 'px';
+    heart.style.animationDuration = (15 + Math.random() * 15) + 's';
+    heart.style.animationDelay = (Math.random() * 15) + 's';
+    backgroundHearts.appendChild(heart);
+  }
+
+  const envelope = document.getElementById('envelope');
+  const floatingMessagesContainer = document.getElementById('floatingMessagesContainer');
+
+  const messages = [
+    "I love you",
+  
+  ];
+
+  function createFloatingMessages() {
+    floatingMessagesContainer.innerHTML = '';
+
+    for (let i = 0; i < 30; i++) {
+      const msgDiv = document.createElement('div');
+      msgDiv.classList.add('floating-message');
+      const text = messages[Math.floor(Math.random() * messages.length)];
+      msgDiv.textContent = text;
+      msgDiv.style.top = (Math.random() * 90 + 5) + 'vh'; // 5-95% ของความสูง viewport
+      msgDiv.style.left = (Math.random() * 95 + 2) + 'vw'; // 2-97% ของความกว้าง viewport
+      const duration = 3 + Math.random() * 4;
+      msgDiv.style.animationDuration = duration + 's';
+      const delay = Math.random() * 5;
+      msgDiv.style.animationDelay = delay + 's';
+
+      floatingMessagesContainer.appendChild(msgDiv);
+    }
+  }
+
+  envelope.addEventListener('click', () => {
+    envelope.classList.toggle('open');
+
+    if (envelope.classList.contains('open')) {
+      createFloatingMessages();
+      floatingMessagesContainer.style.pointerEvents = 'none';
+      floatingMessagesContainer.style.opacity = '1';
+    } else {
+      floatingMessagesContainer.style.opacity = '0';
+      floatingMessagesContainer.innerHTML = '';
+    }
+  });
+</script>
+
+</body>
+</html>
