@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบเก็บเงินกองกลางห้องเรียน (38 คน)</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Kanit', system-ui, sans-serif; margin: 0; padding: 0; }
+    body { background-color: #f0fdf4; padding: 20px 12px; color: #1e293b; }
+    .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+    
+    .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; border-bottom: 2px solid #bbf7d0; padding-bottom: 12px; }
+    h2 { font-size: 1.3rem; color: #166534; display: flex; align-items: center; gap: 8px; }
+    
+    .config-bar { display: flex; gap: 12px; flex-wrap: wrap; font-size: 0.85rem; font-weight: bold; align-items: center; }
+    .config-bar input { padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; }
+    
+    /* สรุปยอด Dashboard */
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .card { background: #f8fafc; padding: 12px 14px; border-radius: 10px; border-left: 4px solid #cbd5e1; }
+    .card.fund { border-color: #0284c7; background: #f0f9ff; }
+    .card.paid { border-color: #22c55e; background: #f0fdf4; }
+    .card.unpaid { border-color: #ef4444; background: #fef2f2; }
+    .card .title { font-size: 0.8rem; color: #64748b; font-weight: bold; }
+    .card .value { font-size: 1.2rem; font-weight: bold; margin-top: 2px; color: #0f172a; }
+    .card.fund .value { color: #0369a1; }
+    .card.paid .value { color: #166534; }
+    .card.unpaid .value { color: #991b1b; }
+    
+    /* ช่องค้นหา */
+    .search-box { margin-bottom: 12px; }
+    .search-input { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; outline: none; }
+    
+    /* ตาราง */
+    .table-responsive { overflow-x: auto; margin-bottom: 16px; max-height: 65vh; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
+    th { background: #166534; color: white; padding: 10px 8px; font-weight: 600; position: sticky; top: 0; z-index: 10; }
+    td { padding: 8px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+    tr:nth-child(even) { background-color: #f8fafc; }
+    tr.paid-row { background-color: #f0fdf4 !important; }
+    
+    .input-amount { width: 60px; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: bold; text-align: right; }
+    
+    /* สถานะ Badge */
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
+    .badge-paid { background-color: #dcfce7; color: #166534; }
+    .badge-credit { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    .badge-partial { background-color: #fef3c7; color: #d97706; }
+    .badge-unpaid { background-color: #fee2e2; color: #991b1b; }
+
+    /* ปุ่ม */
+    .btn { padding: 5px 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.78rem; transition: 0.2s; }
+    .btn-pay { background: #22c55e; color: white; }
+    .btn-pay:hover { background: #16a34a; }
+    .btn-history { background: #0284c7; color: white; margin-left: 4px; }
+    .btn-history:hover { background: #0369a1; }
+    .btn-reset-single { background: #e2e8f0; color: #475569; margin-left: 4px; }
+    
+    .actions-bar { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .btn-global-history { background: #0f766e; color: white; padding: 8px 14px; font-size: 0.85rem; }
+    .btn-withdraw { background: #d97706; color: white; padding: 8px 14px; font-size: 0.85rem; }
+    .btn-withdraw:hover { background: #b45309; }
+    .btn-print { background: #475569; color: white; padding: 8px 14px; font-size: 0.85rem; }
+    .btn-next-week { background: #16a34a; color: white; padding: 8px 14px; font-size: 0.85rem; }
+    .btn-hard-reset { background: #ef4444; color: white; padding: 8px 12px; font-size: 0.8rem; }
+
+    /* หน้าต่างป๊อบอัพ Modal */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 100; justify-content: center; align-items: center; padding: 16px; }
+    .modal-content { background: white; width: 100%; max-width: 550px; border-radius: 12px; padding: 20px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 12px; }
+    .modal-header h3 { font-size: 1.1rem; color: #166534; }
+    .close-modal { cursor: pointer; font-size: 1.4rem; font-weight: bold; color: #64748b; }
+    .close-modal:hover { color: #ef4444; }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .container { box-shadow: none; max-width: 100%; }
+      .actions-bar, .btn, .config-bar input, .input-amount, .search-box { display: none; }
+      .table-responsive { max-height: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h2>🏫 เก็บเงินกองกลางห้องเรียน (38 คน)</h2>
+    <div class="config-bar">
+      <div>
+        <label>📅 ประจำสัปดาห์วันที่ (จันทร์):</label>
+        <input type="date" id="weekDate" onchange="saveSettings()">
+      </div>
+      <div>
+        <label>ค่าห้อง/สัปดาห์:</label>
+        <input type="number" id="defaultRate" value="10" min="1" style="width:55px;" onchange="updateDefaultRate()"> บ.
+      </div>
+      <div>
+        <label>ยอดกองกลางยอดยกมา:</label>
+        <input type="number" id="baseFundInput" value="1450" style="width:75px;" onchange="updateBaseFund()"> บ.
+      </div>
+    </div>
+  </div>
+
+  <!-- สรุปยอด Dashboard -->
+  <div class="summary-grid">
+    <div class="card">
+      <div class="title">นักเรียนทั้งหมด</div>
+      <div class="value">38 คน</div>
+    </div>
+    <div class="card fund">
+      <div class="title">💰 ยอดเงินกองกลางรวมปัจจุบัน</div>
+      <div class="value" id="currentFundTotal">1,450 บาท</div>
+    </div>
+    <div class="card paid">
+      <div class="title">จ่ายครบ/ล่วงหน้า (<span id="paidCount">0</span> คน)</div>
+      <div class="value" id="paidTotal">0 บาท</div>
+    </div>
+    <div class="card unpaid">
+      <div class="title">ยอดค้างรวมทั้งหมด (<span id="unpaidCount">38</span> คน)</div>
+      <div class="value" id="unpaidTotal">0 บาท</div>
+    </div>
+  </div>
+
+  <!-- ช่องค้นหา -->
+  <div class="search-box">
+    <input type="text" id="searchInput" class="search-input" placeholder="🔍 ค้นหาเลขที่ หรือ ชื่อเพื่อน..." oninput="renderTable()">
+  </div>
+
+  <!-- ตารางข้อมูล -->
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 10%;">เลขที่</th>
+          <th style="width: 25%;">ชื่อ - นามสกุล</th>
+          <th style="width: 18%;">ยอดค้างสะสม</th>
+          <th style="width: 14%;">จ่ายแล้วรอบนี้</th>
+          <th style="width: 15%;">สถานะ</th>
+          <th style="width: 18%; text-align: center;">จัดการ</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="actions-bar">
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <button class="btn btn-withdraw" onclick="withdrawFund()">💸 เบิกเงินกองกลาง</button>
+      <button class="btn btn-global-history" onclick="openGlobalHistory()">📜 ประวัติรับ-จ่ายเงินรวม</button>
+      <button class="btn btn-print" onclick="window.print()">🖨️ พิมพ์ตาราง / PDF</button>
+    </div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <button class="btn btn-next-week" onclick="nextWeek()">📅 ขึ้นสัปดาห์ใหม่ (+10 บ.)</button>
+      <button class="btn btn-hard-reset" onclick="hardReset()">⚠️ รีเซ็ตเริ่มระบบใหม่</button>
+    </div>
+  </div>
+</div>
+
+<!-- หน้าต่างป๊อบอัพแสดงประวัติ (Modal) -->
+<div id="historyModal" class="modal" onclick="closeModalOnOutside(event)">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modalTitle">📜 ประวัติการจ่ายเงิน</h3>
+      <span class="close-modal" onclick="closeModal()">&times;</span>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+  let defaultRate = parseFloat(localStorage.getItem('classroom_rate')) || 10;
+  let baseFund = parseFloat(localStorage.getItem('classroom_base_fund')) || 1450;
+  let withdrawHistory = JSON.parse(localStorage.getItem('classroom_withdraw_history')) || [];
+  
+  document.getElementById('defaultRate').value = defaultRate;
+  document.getElementById('baseFundInput').value = baseFund;
+
+  const initialStudentData = [
+    { name: "เต็มทรัพย์", amount: 0 },
+    { name: "ผกาลักษณ์", amount: 20 },
+    { name: "ชนาธิป", amount: 60 },
+    { name: "วรัลญา", amount: 0 },
+    { name: "วัชรพล", amount: 0 },
+    { name: "กานต์นที", amount: 0 },
+    { name: "พิมพาภรณ์", amount: 0 },
+    { name: "แพรวา", amount: 40 },
+    { name: "ปัณณวัฒน์", amount: 0 },
+    { name: "สุภิสรา", amount: 20 },
+    { name: "กมลชนก", amount: 0 },
+    { name: "ธนวัฒน์", amount: 0 },
+    { name: "ทศพร", amount: 40 },
+    { name: "วชิรพงษ์", amount: 0 },
+    { name: "อนุธิดา", amount: 0 },
+    { name: "ฑีฆายุ", amount: 20 },
+    { name: "ภูปกรณ์", amount: 20 },
+    { name: "ศรัณย์รัชต์", amount: 0 },
+    { name: "เดชณรงค์", amount: 0 },
+    { name: "สุกัญญา", amount: 20 },
+    { name: "ปภาวดี", amount: 0 },
+    { name: "อโณทัย", amount: 0 },
+    { name: "กิตติมา", amount: 0 },
+    { name: "ทิพย์สุดา", amount: 20 },
+    { name: "กมลรัตน์", amount: 0 },
+    { name: "อธิวัสน์", amount: 40 },
+    { name: "พรทิพา", amount: 0 },
+    { name: "ทิวารัตน์", amount: 0 },
+    { name: "นิยะดา", amount: 0 },
+    { name: "จิรภัทร", amount: 0 },
+    { name: "ธีรเดช", amount: 0 },
+    { name: "จรูญวิทญ์", amount: 0 },
+    { name: "ชลลดา", amount: 20 },
+    { name: "นิภาพร", amount: 10 },
+    { name: "นิรมล", amount: 5 },
+    { name: "ปิยะธิดา", amount: 40 },
+    { name: "วัชรโสภณ", amount: 0 },
+    { name: "ไอย์ลดา", amount: 0 }
+  ];
+
+  const defaultStudents = initialStudentData.map((item, index) => ({
+    id: index + 1,
+    no: `เลขที่ ${index + 1}`,
+    name: item.name,
+    amount: item.amount,
+    credit: 0, // ยอดจ่ายล่วงหน้า
+    totalPaid: 0,
+    history: []
+  }));
+
+  let students = JSON.parse(localStorage.getItem('classroom_students_v38_final')) || defaultStudents;
+
+  document.getElementById('weekDate').value = localStorage.getItem('classroom_date_real') || '2026-08-10';
+
+  function saveSettings() {
+    localStorage.setItem('classroom_date_real', document.getElementById('weekDate').value);
+  }
+
+  function updateDefaultRate() {
+    const newRate = parseFloat(document.getElementById('defaultRate').value) || 10;
+    defaultRate = newRate;
+    localStorage.setItem('classroom_rate', newRate);
+    renderTable();
+  }
+
+  function updateBaseFund() {
+    const newBase = parseFloat(document.getElementById('baseFundInput').value) || 0;
+    baseFund = newBase;
+    localStorage.setItem('classroom_base_fund', newBase);
+    renderTable();
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('tableBody');
+    const searchKeyword = document.getElementById('searchInput').value.toLowerCase();
+    tbody.innerHTML = '';
+    
+    let paidCount = 0;
+    let paidTotal = 0;
+    let unpaidTotal = 0;
+
+    students.forEach((item, index) => {
+      paidTotal += parseFloat(item.totalPaid || 0);
+      unpaidTotal += parseFloat(item.amount || 0);
+
+      const credit = item.credit || 0;
+      if (item.amount === 0) {
+        paidCount++;
+      }
+
+      const matchesSearch = item.no.toLowerCase().includes(searchKeyword) || item.name.toLowerCase().includes(searchKeyword);
+
+      if (matchesSearch) {
+        const tr = document.createElement('tr');
+        if (item.amount === 0) tr.className = 'paid-row';
+
+        let statusBadge = '';
+        if (credit > 0) {
+          statusBadge = `<span class="badge badge-credit">✨ ล่วงหน้า ${credit} บ.</span>`;
+        } else if (item.amount === 0) {
+          statusBadge = '<span class="badge badge-paid">✓ จ่ายครบแล้ว</span>';
+        } else if (item.totalPaid > 0) {
+          statusBadge = `<span class="badge badge-partial">⚡ จ่ายบางส่วน</span>`;
+        } else {
+          statusBadge = '<span class="badge badge-unpaid">✕ ยังไม่จ่าย</span>';
+        }
+
+        const historyCount = item.history ? item.history.length : 0;
+
+        tr.innerHTML = `
+          <td><strong>${item.no}</strong></td>
+          <td><strong>${item.name}</strong></td>
+          <td>
+            <input type="number" class="input-amount" value="${item.amount}" onchange="changeAmount(${index}, this.value)"> บ.
+            ${credit > 0 ? `<div style="font-size:0.75rem; color:#0369a1; font-weight:bold; margin-top:2px;">(+ล่วงหน้า ${credit} บ.)</div>` : ''}
+          </td>
+          <td>
+            <span style="color: #166534; font-weight: bold;">${item.totalPaid} บ.</span>
+          </td>
+          <td>${statusBadge}</td>
+          <td style="text-align: center;">
+            <button class="btn btn-pay" onclick="payMoney(${index})">+ จ่ายเงิน</button>
+            <button class="btn btn-history" onclick="openStudentHistory(${index})" title="ดูประวัติการจ่าย">📜 (${historyCount})</button>
+            <button class="btn btn-reset-single" title="รีเซ็ตคนนี้" onclick="resetSingleStudent(${index})">🔄</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+    });
+
+    const grandTotalFund = baseFund + paidTotal;
+
+    document.getElementById('currentFundTotal').textContent = grandTotalFund.toLocaleString() + ' บาท';
+    document.getElementById('paidCount').textContent = paidCount;
+    document.getElementById('unpaidCount').textContent = students.length - paidCount;
+    document.getElementById('paidTotal').textContent = paidTotal.toLocaleString() + ' บาท';
+    document.getElementById('unpaidTotal').textContent = unpaidTotal.toLocaleString() + ' บาท';
+
+    localStorage.setItem('classroom_students_v38_final', JSON.stringify(students));
+  }
+
+  function changeAmount(index, val) {
+    const num = parseFloat(val);
+    students[index].amount = isNaN(num) ? 0 : Math.max(0, num);
+    renderTable();
+  }
+
+  // ระบบรับเงินชำระ (รองรับการจ่ายเกินเพื่อเป็นเครดิตจ่ายล่วงหน้า)
+  function payMoney(index) {
+    const student = students[index];
+    const currentDebt = student.amount || 0;
+    const currentCredit = student.credit || 0;
+
+    const inputVal = prompt(
+      `รับชำระเงินจาก ${student.no} (${student.name})\n` +
+      `• ยอดค้างชำระปัจจุบัน: ${currentDebt} บาท\n` +
+      `• ยอดจ่ายล่วงหน้าสะสมเดิม: ${currentCredit} บาท\n\n` +
+      `ระบุจำนวนเงินที่รับมา (บาท):`, 
+      currentDebt > 0 ? currentDebt : ''
+    );
+
+    if (inputVal === null) return;
+
+    const payVal = parseFloat(inputVal);
+    if (isNaN(payVal) || payVal <= 0) {
+      alert('กรุณากรอกจำนวนเงินที่ถูกต้องครับ');
+      return;
+    }
+
+    // คำนวณยอดค้าง และยอดจ่ายล่วงหน้า
+    if (student.amount > 0) {
+      if (payVal <= student.amount) {
+        student.amount -= payVal;
+      } else {
+        const overpaid = payVal - student.amount;
+        student.amount = 0;
+        student.credit = (student.credit || 0) + overpaid;
+      }
+    } else {
+      student.credit = (student.credit || 0) + payVal;
+    }
+
+    student.totalPaid = (student.totalPaid || 0) + payVal;
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: '2-digit' });
+    const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
+    if (!student.history) student.history = [];
+    student.history.unshift({
+      date: `${dateStr} ${timeStr} น.`,
+      amount: payVal,
+      timestamp: now.getTime()
+    });
+
+    renderTable();
+  }
+
+  function withdrawFund() {
+    let currentPaidTotal = 0;
+    students.forEach(item => { currentPaidTotal += parseFloat(item.totalPaid || 0); });
+    const grandTotalFund = baseFund + currentPaidTotal;
+
+    const amountStr = prompt(`💸 เบิกเงินกองกลาง\n• ยอดกองกลางปัจจุบันคงเหลือ: ${grandTotalFund.toLocaleString()} บาท\n\nระบุจำนวนเงินที่ต้องการเบิก (บาท):`);
+    if (amountStr === null) return;
+
+    const amount = parseFloat(amountStr);
+    if (isNaN(amount) || amount <= 0) {
+      alert('กรุณากรอกจำนวนเงินที่ถูกต้องครับ');
+      return;
+    }
+
+    if (amount > grandTotalFund) {
+      alert(`ยอดเงินกองกลางไม่พอถอนครับ! (ยอดคงเหลือปัจจุบัน: ${grandTotalFund.toLocaleString()} บาท)`);
+      return;
+    }
+
+    const note = prompt('ระบุเหตุผล/หมายเหตุการเบิกเงิน:', 'เบิกใช้จ่ายกองกลาง') || 'เบิกใช้จ่ายกองกลาง';
+
+    baseFund -= amount;
+    localStorage.setItem('classroom_base_fund', baseFund);
+    document.getElementById('baseFundInput').value = baseFund;
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: '2-digit' });
+    const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
+    withdrawHistory.unshift({
+      date: `${dateStr} ${timeStr} น.`,
+      amount: amount,
+      note: note,
+      timestamp: now.getTime()
+    });
+
+    localStorage.setItem('classroom_withdraw_history', JSON.stringify(withdrawHistory));
+
+    alert(`เบิกเงินสำเร็จ: -${amount.toLocaleString()} บาท\n(เหตุผล: ${note})\n\nเงินกองกลางคงเหลือ: ${(grandTotalFund - amount).toLocaleString()} บาท`);
+    renderTable();
+  }
+
+  function openStudentHistory(index) {
+    const student = students[index];
+    const modal = document.getElementById('historyModal');
+    const title = document.getElementById('modalTitle');
+    const body = document.getElementById('modalBody');
+
+    title.textContent = `📜 ประวัติการจ่ายเงิน: ${student.no} (${student.name})`;
+
+    if (!student.history || student.history.length === 0) {
+      body.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:20px;">ยังไม่มีประวัติการจ่ายเงิน</p>';
+    } else {
+      let html = '<ul style="list-style:none; padding:0;">';
+      student.history.forEach(item => {
+        html += `
+          <li style="padding: 10px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-weight: bold; color: #475569;">📅 ${item.date}</span>
+            <strong style="color: #166534; font-size: 0.95rem;">+${item.amount} บาท</strong>
+          </li>
+        `;
+      });
+      html += '</ul>';
+      body.innerHTML = html;
+    }
+
+    modal.style.display = 'flex';
+  }
+
+  function openGlobalHistory() {
+    let allLogs = [];
+    
+    students.forEach(s => {
+      if (s.history && s.history.length > 0) {
+        s.history.forEach(h => {
+          allLogs.push({
+            type: 'IN',
+            name: `${s.no} (${s.name})`,
+            date: h.date,
+            amount: h.amount,
+            timestamp: h.timestamp || 0
+          });
+        });
+      }
+    });
+
+    withdrawHistory.forEach(w => {
+      allLogs.push({
+        type: 'OUT',
+        name: `💸 เบิกกองกลาง: ${w.note}`,
+        date: w.date,
+        amount: w.amount,
+        timestamp: w.timestamp || 0
+      });
+    });
+
+    allLogs.sort((a, b) => b.timestamp - a.timestamp);
+
+    const modal = document.getElementById('historyModal');
+    const title = document.getElementById('modalTitle');
+    const body = document.getElementById('modalBody');
+
+    title.textContent = `📜 ประวัติรับ-จ่ายเงินกองกลางรวม`;
+
+    if (allLogs.length === 0) {
+      body.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:20px;">ยังไม่มีประวัติการรับ-จ่ายเงินในระบบ</p>';
+    } else {
+      let html = `
+        <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+          <thead style="background:#f1f5f9;">
+            <tr>
+              <th style="padding:8px; text-align:left;">รายการ / รายชื่อ</th>
+              <th style="padding:8px; text-align:left;">วัน-เวลา</th>
+              <th style="padding:8px; text-align:right;">จำนวนเงิน</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      allLogs.forEach(log => {
+        const isIncome = log.type === 'IN';
+        const amountColor = isIncome ? '#166534' : '#dc2626';
+        const prefix = isIncome ? '+' : '-';
+        
+        html += `
+          <tr style="border-bottom:1px solid #e2e8f0; ${!isIncome ? 'background:#fef2f2;' : ''}">
+            <td style="padding:8px;"><strong>${log.name}</strong></td>
+            <td style="padding:8px; color:#64748b;">${log.date}</td>
+            <td style="padding:8px; text-align:right; color:${amountColor}; font-weight:bold;">${prefix}${log.amount} บ.</td>
+          </tr>
+        `;
+      });
+      html += '</tbody></table>';
+      body.innerHTML = html;
+    }
+
+    modal.style.display = 'flex';
+  }
+
+  function closeModal() {
+    document.getElementById('historyModal').style.display = 'none';
+  }
+
+  function closeModalOnOutside(event) {
+    if (event.target.id === 'historyModal') {
+      closeModal();
+    }
+  }
+
+  // ขึ้นสัปดาห์ใหม่ (+10 บ. และคำนวณหักจากยอดล่วงหน้าอัตโนมัติ)
+  function nextWeek() {
+    const rate = parseFloat(document.getElementById('defaultRate').value) || 10;
+    let currentDateVal = document.getElementById('weekDate').value;
+    
+    let d = currentDateVal ? new Date(currentDateVal) : new Date();
+    d.setDate(d.getDate() + 7);
+    
+    const nextWeekDateStr = d.toISOString().split('T')[0];
+    const displayDate = d.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+    if (confirm(`ขึ้นสัปดาห์ใหม่:\n• เลื่อนเป็นรอบวันจันทร์ที่: ${displayDate}\n• สมทบยอดเงินที่เก็บได้รอบนี้เข้ากองกลางสะสมทันที\n• นำยอดจ่ายล่วงหน้า (ถ้ามี) ตัดชำระค่าห้อง +${rate} บาท อัตโนมัติ\n• ประวัติการรับเงินเดิมยังอยู่ครบถ้วน\n\nยืนยันหรือไม่?`)) {
+      let currentPaidTotal = 0;
+      students.forEach(item => {
+        currentPaidTotal += parseFloat(item.totalPaid || 0);
+      });
+
+      baseFund += currentPaidTotal;
+      localStorage.setItem('classroom_base_fund', baseFund);
+      document.getElementById('baseFundInput').value = baseFund;
+
+      document.getElementById('weekDate').value = nextWeekDateStr;
+      saveSettings();
+
+      // ปรับปรุงยอดหนี้ และยอดล่วงหน้าสำหรับสัปดาห์ใหม่
+      students.forEach(item => {
+        let credit = item.credit || 0;
+        if (credit >= rate) {
+          item.credit = credit - rate;
+          item.amount = 0;
+        } else {
+          const remainingRate = rate - credit;
+          item.credit = 0;
+          item.amount = (item.amount || 0) + remainingRate;
+        }
+        item.totalPaid = 0;
+      });
+
+      renderTable();
+    }
+  }
+
+  function resetSingleStudent(index) {
+    if (confirm(`ต้องการรีเซ็ตยอดของ ${students[index].no} (${students[index].name}) กลับเป็นค่าเริ่มต้นหรือไม่?`)) {
+      students[index].amount = initialStudentData[index].amount;
+      students[index].credit = 0;
+      students[index].totalPaid = 0;
+      students[index].history = [];
+      renderTable();
+    }
+  }
+
+  function hardReset() {
+    if (confirm('⚠️ เตือน: คุณต้องการล้างข้อมูลทั้งหมดเพื่อกลับไปเป็นค่าเริ่มต้นใช่ไหม?')) {
+      document.getElementById('weekDate').value = '2026-08-10';
+      document.getElementById('baseFundInput').value = 1450;
+      baseFund = 1450;
+      withdrawHistory = [];
+      saveSettings();
+      localStorage.setItem('classroom_base_fund', 1450);
+      localStorage.removeItem('classroom_withdraw_history');
+
+      students = initialStudentData.map((item, index) => ({
+        id: index + 1,
+        no: `เลขที่ ${index + 1}`,
+        name: item.name,
+        amount: item.amount,
+        credit: 0,
+        totalPaid: 0,
+        history: []
+      }));
+      renderTable();
+    }
+  }
+
+  renderTable();
+</script>
+
+</body>
+</html>
